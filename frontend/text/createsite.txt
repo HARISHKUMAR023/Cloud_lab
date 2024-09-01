@@ -1,0 +1,138 @@
+To provide users with a URL like https://my-awesome-site.deployservice.com after they upload their site, you'll need to implement several additional steps:
+
+Steps to Generate and Provide a Custom URL:
+Domain Setup: Set up a wildcard subdomain (*.deployservice.com) that points to your server.
+
+Dynamic Subdomain Handling: Update your server configuration to handle dynamic subdomains and map them to the corresponding user directories.
+
+URL Generation in PHP: Modify the backend PHP script to generate and return a custom URL based on the site name.
+
+1. Domain and DNS Setup
+Purchase a domain, e.g., deployservice.com.
+In your DNS settings, create a wildcard subdomain entry that points to your server’s IP address. This will allow any subdomain (e.g., my-awesome-site.deployservice.com) to resolve to your server.
+2. Server Configuration
+Depending on the web server you are using (Apache, Nginx, etc.), you’ll need to configure it to handle requests to different subdomains dynamically.
+
+For Apache:
+Enable the mod_vhost_alias module to handle dynamic subdomains.
+Add a virtual host configuration:
+apache
+Copy code
+<VirtualHost *:80>
+    ServerName deployservice.com
+    ServerAlias *.deployservice.com
+    DocumentRoot /var/www/deployments
+
+    # Dynamic DocumentRoot based on subdomain
+    VirtualDocumentRoot /var/www/deployments/%1
+
+    <Directory /var/www/deployments/>
+        Options Indexes FollowSymLinks MultiViews
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+For Nginx:
+Modify the Nginx configuration:
+nginx
+Copy code
+server {
+    listen 80;
+    server_name *.deployservice.com;
+
+    root /var/www/deployments/$host;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+3. PHP Script to Handle Uploads and Generate URL
+Modify your PHP script to create a subdirectory under the deployments directory and generate a custom URL:
+
+php
+Copy code
+<?php
+header("Content-Type: application/json; charset=UTF-8");
+
+include_once '../config/database.php';
+include_once '../classes/site.php';
+
+$database = new Database();
+$db = $database->getConnection();
+
+$site = new Site($db);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $site->user_id = $_POST['user_id'];
+    $site->site_name = $_POST['siteName'];
+
+    // Generate a directory name based on the site name
+    $upload_dir = '/var/www/deployments/' . $site->site_name . '/';
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+    }
+
+    // Move uploaded files to the site directory
+    foreach ($_FILES['files']['name'] as $key => $filename) {
+        $file_tmp = $_FILES['files']['tmp_name'][$key];
+        move_uploaded_file($file_tmp, $upload_dir . $filename);
+    }
+
+    // Save the site URL
+    $site->url = 'https://' . $site->site_name . '.deployservice.com';
+
+    if ($site->uploadSite()) {
+        echo json_encode(["message" => "Site uploaded successfully.", "siteUrl" => $site->url]);
+    } else {
+        echo json_encode(["message" => "Unable to upload site."]);
+    }
+} else {
+    echo json_encode(["message" => "Invalid request."]);
+}
+4. User Experience
+When a user uploads their site:
+
+The PHP script processes the files, stores them in a directory named after the site, and returns a URL like https://my-awesome-site.deployservice.com.
+The user can access their site via this URL.
+Summary
+By following these steps, you provide users with a custom URL for their deployed site. The wildcard subdomain setup and dynamic server configuration allow each user's site to be accessed through a unique, memorable URL.
+
+
+<?php
+header("Content-Type: application/json; charset=UTF-8");
+
+include_once '../config/database.php';
+include_once '../classes/site.php';
+
+$database = new Database();
+$db = $database->getConnection();
+
+$site = new Site($db);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $site->user_id = $_POST['user_id'];
+    $site->site_name = $_POST['siteName'];
+
+    // Generate a directory name based on the site name
+    $upload_dir = '/var/www/deployments/' . $site->site_name . '/';
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+    }
+
+    // Move uploaded files to the site directory
+    foreach ($_FILES['files']['name'] as $key => $filename) {
+        $file_tmp = $_FILES['files']['tmp_name'][$key];
+        move_uploaded_file($file_tmp, $upload_dir . $filename);
+    }
+
+    // Save the site URL
+    $site->url = 'https://' . $site->site_name . '.deployservice.com';
+
+    if ($site->uploadSite()) {
+        echo json_encode(["message" => "Site uploaded successfully.", "siteUrl" => $site->url]);
+    } else {
+        echo json_encode(["message" => "Unable to upload site."]);
+    }
+} else {
+    echo json_encode(["message" => "Invalid request."]);
+}

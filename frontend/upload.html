@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Site</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Upload Your Site</h1>
+    </header>
+    <main>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label for="siteName">Site Name:</label>
+            <input type="text" id="siteName" name="siteName" required>
+            <label for="files">Upload Files:</label>
+            <input type="file" id="siteFiles" name="files[]" multiple required>
+            <button type="submit">Upload</button>
+        </form>
+    </main>
+    <footer>
+        <p>&copy; 2024 Deployment Service</p>
+    </footer>
+    <!-- <script src="js/main.js"></script> -->
+
+    <script>
+            // Upload Form
+    const uploadForm = document.getElementById('uploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const userId = localStorage.getItem('userId');
+            const siteName = document.getElementById('siteName').value;
+            const files = document.getElementById('siteFiles').files;
+
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('siteName', siteName);
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files[]', files[i]);
+            }
+
+            fetch('http://localhost/PAAS_LAB/backend/api/upload.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                loadSites();
+            });
+        });
+    }
+
+      // Load User Sites
+      function loadSites() {
+        const userId = localStorage.getItem('userId');
+        fetch(`http://localhost/PAAS_LAB/backend/api/sites.php?user_id=${userId}`)
+        .then(response => response.json())
+        .then(sites => {
+            const siteList = document.getElementById('siteList');
+            if (siteList) {
+                siteList.innerHTML = '';
+                sites.forEach(site => {
+                    siteList.innerHTML += `<li><a href="${site.url}">${site.site_name}</a></li>`;
+                });
+            }
+        });
+    }
+
+    // Load sites on dashboard
+    const siteList = document.getElementById('siteList');
+    if (siteList) {
+        loadSites();
+    }
+    </script>
+</body>
+</html>

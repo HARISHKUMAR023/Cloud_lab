@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Dashboard</h1>
+        <nav>
+            <a href="upload.html">Upload New Site</a>
+            <a onclick="logout()">Logout</a>
+        </nav>
+    </header>
+    <main>
+        <h2>Your Sites</h2>
+        <ul id="siteList">
+            <!-- List of user sites will be dynamically populated here -->
+        </ul>
+    </main>
+    <footer>
+        <p>&copy; 2024 Deployment Service</p>
+    </footer>
+    <!-- <script src="./js/main.js"></script> -->
+     <script>
+        function logout() {
+            localStorage.removeItem('userId'); // Remove the user ID from localStorage
+            window.location.href = 'login.html'; // Redirect to the login page
+        }
+        
+              // Load User Sites
+      function loadSites() {
+        const userId = localStorage.getItem('userId');
+        fetch(`http://localhost/PAAS_LAB/backend/api/sites.php?user_id=${userId}`)
+        .then(response => response.json())
+        .then(sites => {
+            const siteList = document.getElementById('siteList');
+            if (siteList) {
+                siteList.innerHTML = '';
+                sites.forEach(site => {
+                    siteList.innerHTML += `<li ><a href="${site.url}" target="_blank">${site.site_name}</a></li>`;
+                });
+            }
+        });
+    }
+
+    // Load sites on dashboard
+    const siteList = document.getElementById('siteList');
+    if (siteList) {
+        loadSites();
+    }
+     </script>
+</body>
+</html>
